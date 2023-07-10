@@ -13,7 +13,8 @@ import { doc,
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  onAuthStateChanged
 } from 'firebase/auth'
 
 import './app.css';
@@ -49,6 +50,27 @@ function App() {
 
     loadPosts();
   });
+
+  useEffect(() => {
+    async function checkLogin(){
+      //Verifica se o usuário está logado(Utiliza localStorage)
+      await onAuthStateChanged(auth, (user) => { 
+        //Aqui é definido o observer que irá verificar se está logado
+        if(user){ //Se possuir é pq tem usuário logado
+          setUser(true);
+          setUserDetail({
+            uid: user.uid,
+            email: user.email
+          });
+        } else { 
+          setUser(false);
+          setUserDetail({});
+        }
+      })
+    }
+
+    checkLogin();
+  }, []);
 
   //Função assíncrona, pois pode demorar para retornar resposta do banco 
   async function add() { 
