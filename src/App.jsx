@@ -1,4 +1,4 @@
-import { db } from './FirebaseConnection';
+import { auth, db } from './FirebaseConnection';
 import { useState, useEffect } from 'react';
 import { doc,
          setDoc,
@@ -9,9 +9,21 @@ import { doc,
         updateDoc, 
         deleteDoc,
         onSnapshot } from 'firebase/firestore';
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
+} from 'firebase/auth'
+
 import './app.css';
 
 function App() {
+
+  const [ email, setEmail ] = useState('');
+  const [ senha, setSenha ] = useState('');
+  const [ user, setUser ] = useState(false);
+  const [ userDetail, setUserDetail ] = useState({});
 
   const [ titulo, setTitulo ] = useState('');
   const [ autor, setAutor ] = useState('');
@@ -21,7 +33,7 @@ function App() {
   useEffect(() => { //Buscar todo assim que iniciar, ou quando houver mudança no banco
     async function loadPosts(){
       //Verificação em tempo real (snapshot)
-      const unsub = onSnapshot(collection(db, 'posts'), (snapshot) => {
+      onSnapshot(collection(db, 'posts'), (snapshot) => {
         let listaPost = [];
         snapshot.forEach((doc) => {
           //Percorrendo a lista retornada do banco e montando o objeto para a lista
@@ -135,18 +147,84 @@ function App() {
     async function excluirPost(id){
       const docRef = doc(db, 'posts', id);
 
-      await deleteDoc(docRef).then(() => {
-                              alert('Post deletado com sucesso!')                      
+      await deleteDoc(docRef).then((promisse) => {
+                              alert('Post deletado com sucesso!')  
+                              setEmail('');
+                              setSenha('');                    
                             })
                              .catch((error) => console.log(error))
     }
+
+  async function cadastrar(){
+    //Criando um usuário para autenticação no banco de dados
+     await createUserWithEmailAndPassword(auth, email, senha)
+            .then(() => alert('cadastrado com sucesso!')).catch(error => console.log(error)); 
+  }
+
+  async function login(){
+    //Mandando dados do usuário para verificar se está autenticado no banco
+    await signInWithEmailAndPassword(auth, email, senha) 
+          .then(promisse => {
+            alert('usuário logado com sucesso!');
+
+            //Guardando dados do usuário
+            setUserDetail({
+              uid: promisse.user.uid,
+              email: promisse.user.email
+            });
+            setUser(true);
+
+            setEmail('');
+            setSenha('');  
+          })
+          .catch(error => {
+            console.log(error);
+          });
+  }
+
+  async function logout() {
+    await signOut(auth); //Faz logout do sistema
+    setUser(false);
+    setUserDetail({});
+  }
 
   return (
       <div>
         <h1>Teste firebase</h1>
 
-        <div className="container">
+        { user &&
+          <div>
+            <strong>Seja bem-vindo(a) (Você está logado!)</strong> <br />
+            <span>ID: { userDetail.uid } - Email: { userDetail.email } </span>
+          </div> 
+        }
 
+        <div className="container">
+        <h2>Usuários</h2>
+          <label>Email</label>
+          <textarea 
+            type="text"
+            placeholder='Digite o seu email'
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)}/>
+          <br />
+          
+          <label>Senha</label>
+          <textarea 
+            type="text"
+            placeholder='Digite a sua senha'
+            value={senha} 
+            onChange={(e) => setSenha(e.target.value)}/>
+          <br />
+
+          <button onClick={() => cadastrar()}>Cadastrar</button>
+          <button onClick={() => login()}>Login</button>
+          <button onClick={() => logout()}>Logout</button>
+        </div>
+
+        <br /> <hr />
+        <div className="container">
+        <h2>Posts</h2>
         <label>Id do post</label>
           <textarea 
             type="text"
