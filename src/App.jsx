@@ -1,13 +1,14 @@
 import { db } from './FirebaseConnection';
 import { useState } from 'react';
-import { doc, setDoc, collection, addDoc, getDoc, getDocs } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import './app.css';
 
 function App() {
 
-  const [titulo, setTitulo] = useState('');
-  const [autor, setAutor] = useState('');
+  const [ titulo, setTitulo ] = useState('');
+  const [ autor, setAutor ] = useState('');
   const [ posts, setPosts ] = useState([]);
+  const [ idPost, setIdPost ] = useState('');
 
   //Função assíncrona, pois pode demorar para retornar resposta do banco 
   async function add() { 
@@ -71,7 +72,7 @@ function App() {
                     snapshot.forEach((doc) => {
                       //Percorrendo a lista retornada do banco e montando o objeto para a lista
                       lista.push({ 
-                        id: doc.data().id,
+                        id: doc.id,
                         titulo: doc.data().titulo,
                         autor: doc.data().autor
                       });
@@ -82,30 +83,65 @@ function App() {
                   });
     }
 
+    /**
+     * Atualizar Post
+     */
+
+    async function atualizarPost(){
+      const docRef = doc(db, 'posts', idPost); //Criando a referência do posto
+      await updateDoc(docRef, {
+        titulo: titulo,
+        autor: autor
+      }).then(() => {
+        alert('Alterou o post!')
+        setIdPost('');
+        setTitulo('');
+        setAutor('');
+        setPosts([]);
+      })
+        .catch(error => {
+        console.log(error)
+      });
+    }
+
   return (
       <div>
         <h1>Teste firebase</h1>
 
         <div className="container">
+
+        <label>Id do post</label>
+          <textarea 
+            type="text"
+            placeholder='Digite o id do post'
+            value={idPost} 
+            onChange={(e) => setIdPost(e.target.value)}/>
+          <br />
           <label>Titulo</label>
           <textarea 
             type="text"
             placeholder='Digite um titulo'
             value={titulo} 
             onChange={(e) => setTitulo(e.target.value)}/>
-
+          <br />
           <label>Autor: </label>
           <input 
             placeholder='Autor do post'
             value={autor} 
             onChange={(e) => setAutor(e.target.value)}/>
-
+          <br />
           <button onClick={add}>Cadastrar</button>
+          <br />
+          <button onClick={atualizarPost}>AtualizarPost</button>
+          <br />
           <button onClick={buscar}>Buscar</button>
+          <br />
           <button onClick={buscarPosts}>Buscar Todos</button>
+          <br />
           <ul>
             {posts.map(post => (
                 <li key={post.id}>
+                  <strong>ID: {post.id}</strong> <br /> 
                   <span>Titulo: {post.titulo}</span> <br /> 
                   <span>Autor: {post.autor}</span> 
                 </li>
