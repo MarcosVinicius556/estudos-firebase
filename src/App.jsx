@@ -1,6 +1,14 @@
 import { db } from './FirebaseConnection';
-import { useState } from 'react';
-import { doc, setDoc, collection, addDoc, getDoc, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { doc,
+         setDoc,
+        collection, 
+        addDoc, 
+        getDoc, 
+        getDocs, 
+        updateDoc, 
+        deleteDoc,
+        onSnapshot } from 'firebase/firestore';
 import './app.css';
 
 function App() {
@@ -9,6 +17,26 @@ function App() {
   const [ autor, setAutor ] = useState('');
   const [ posts, setPosts ] = useState([]);
   const [ idPost, setIdPost ] = useState('');
+
+  useEffect(() => { //Buscar todo assim que iniciar, ou quando houver mudança no banco
+    async function loadPosts(){
+      //Verificação em tempo real (snapshot)
+      const unsub = onSnapshot(collection(db, 'posts'), (snapshot) => {
+        let listaPost = [];
+        snapshot.forEach((doc) => {
+          //Percorrendo a lista retornada do banco e montando o objeto para a lista
+          listaPost.push({ 
+            id: doc.id,
+            titulo: doc.data().titulo,
+            autor: doc.data().autor
+          });
+          setPosts(listaPost);
+        })
+      });
+    }
+
+    loadPosts();
+  });
 
   //Função assíncrona, pois pode demorar para retornar resposta do banco 
   async function add() { 
