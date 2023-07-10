@@ -1,12 +1,13 @@
 import { db } from './FirebaseConnection';
 import { useState } from 'react';
-import { doc, setDoc, collection, addDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, getDoc, getDocs } from 'firebase/firestore';
 import './app.css';
 
 function App() {
 
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
+  const [ posts, setPosts ] = useState([]);
 
   //Função assíncrona, pois pode demorar para retornar resposta do banco 
   async function add() { 
@@ -59,6 +60,28 @@ function App() {
                   }); //Falha
     }
 
+    /**
+     * Busca todos os posts
+     */
+    async function buscarPosts(){
+      const postsRef = collection(db, "posts"); //Acessando a coleção de posts (criando referência)
+      await getDocs(postsRef)
+                  .then((snapshot) => { //Caso de sucesso
+                    let lista = [];
+                    snapshot.forEach((doc) => {
+                      //Percorrendo a lista retornada do banco e montando o objeto para a lista
+                      lista.push({ 
+                        id: doc.data().id,
+                        titulo: doc.data().titulo,
+                        autor: doc.data().autor
+                      });
+                      setPosts(lista);
+                    })
+                  }).catch((error) => { //Caso de falha
+                    console.log(error)
+                  });
+    }
+
   return (
       <div>
         <h1>Teste firebase</h1>
@@ -79,6 +102,16 @@ function App() {
 
           <button onClick={add}>Cadastrar</button>
           <button onClick={buscar}>Buscar</button>
+          <button onClick={buscarPosts}>Buscar Todos</button>
+          <ul>
+            {posts.map(post => (
+                <li key={post.id}>
+                  <span>Titulo: {post.titulo}</span> <br /> 
+                  <span>Autor: {post.autor}</span> 
+                </li>
+              )
+            )}
+          </ul>
         </div>
       </div>
   )
